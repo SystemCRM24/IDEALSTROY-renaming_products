@@ -16,7 +16,20 @@ class DealUserFields:
     cabin = "UF_CRM_1728385086"                 # Бытовка
 
 
-MONTHS = ('Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь')
+MONTHS = (
+    'Январь', 
+    'Февраль', 
+    'Март', 
+    'Апрель', 
+    'Май', 
+    'Июнь', 
+    'Июль', 
+    'Август', 
+    'Сентябрь', 
+    'Октябрь', 
+    'Ноябрь', 
+    'Декабрь'
+)
 
 
 # @handle_exception
@@ -62,25 +75,29 @@ async def get_products(deal_id: int) -> list:
 
 def handle_products(deal: dict, products: list) -> Generator[dict]:
     """Ищет нужные продукты и обновляет их"""
+    # TODO переписать под ID
     rent_start = date_var = datetime.fromisoformat(deal[DealUserFields.rent_date_start])
+    rent_flag = True
     for product in products:
-        if product['PRODUCT_NAME'].startswith("Прокат"):
-            product, date_var = update_from_month_name(product, date_var=date_var)
+        if product['PRODUCT_NAME'].startswith("Прокат") and rent_flag:
+            product, date_var = update_from_month_name(product, deal=deal, date_var=date_var)
+            rent_flag = False
             yield product
-        if product['PRODUCT_NAME'].startswith("Сумма аренды"):
+        if product['PRODUCT_ID'] == 1437:           # .startswith("Сумма аренды"): Он же остаток
             yield update_from_month_range(product, deal=deal, rent_start=rent_start)
-        if product['PRODUCT_NAME'].startswith("Доставка"):
+        if product['PRODUCT_ID'] == 1439:           # product['PRODUCT_NAME'].startswith("Доставка"):
             yield update_from_delivery_address(product, deal=deal)
 
 
 def update_from_month_name(product: dict, **context) -> dict:
     """Обновляет имя продукта. Добавляет к названию название месяца и год."""
     date_var = context['date_var']
+    deal = context['deal']
     current_month_num = date_var.month
     while current_month_num == date_var.month:
         date_var += timedelta(days=1)
     product['PRODUCT_NAME'] = (
-        f"{product['PRODUCT_NAME']} за "
+        f"Прокат {deal[DealUserFields.cabin]} за "
         f"{MONTHS[date_var.month - 1]} {date_var.year} г."
     )
     return product, date_var
@@ -104,10 +121,13 @@ def update_from_delivery_address(product: dict, **context) -> dict:
     delivery_address: str = context['deal'][DealUserFields.delivery_address].split('|')[0]
     delivery_address = delivery_address.split(', ')
     if len(delivery_address) >= 3:                          # Если адрес правильный
-        delivery_address[-2] = delivery_address[-2][7:]     # Удаление индекса из строки адреса
-        del delivery_address[-1]                            # Удаление страны из адреса
+        # Удаление индекса из строки адреса
+        if delivery_address[-2][0].isdigit():               
+            delivery_address[-2] = delivery_address[-2][7:]     
+        # Удаление страны из адреса
+        del delivery_address[-1]
     product['PRODUCT_NAME'] = (
-        f"{product['PRODUCT_NAME']}: "
+        f"Доставка бытовки: "
         f"{production_address} - до "
         f"{', '.join(delivery_address[::-1])}"
         f" - {production_address}"
