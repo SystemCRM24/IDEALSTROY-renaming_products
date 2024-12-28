@@ -1,0 +1,15 @@
+x-app_environment: &app_environment
+  environment:
+    # Bitrix
+    - BITRIX_WEBHOOK
+
+services:
+  app:
+    restart: always
+    build: 
+      context: .
+    ports:
+      - 8080:8000
+    command: "uvicorn main:app --host 0.0.0.0 --port 8000"
+    environment:
+      - BITRIX_WEBHOOK
