@@ -17,7 +17,7 @@ async def ping():
     return {'Message': 'Pong'}
 
 
-@app.get('/rename/', status_code=200, tags=['Main'])
+@app.post('/rename/', status_code=200, tags=['Main'])
 async def main(deal_id: int):
     """Переименовывает продукты в сделке"""
     products = await rename_products(deal_id)
