@@ -1,13 +1,7 @@
-"""Запросы к битриксу"""
-from fast_bitrix24 import BitrixAsync
-from dotenv import dotenv_values
 import asyncio, calendar
 from typing import Generator
 from datetime import datetime, timedelta
-
-
-ENV = dotenv_values()
-BX = BitrixAsync(ENV['BITRIX_WEBHOOK'], verbose=False)
+from .constants import BX, logger
 
 
 class DealUserFields:
@@ -32,7 +26,6 @@ MONTHS = (
 )
 
 
-# @handle_exception
 async def rename_products(deal_id: int) -> list:
     """Основной метод переименования продкутов"""
     deal, products = await asyncio.gather(
@@ -40,7 +33,9 @@ async def rename_products(deal_id: int) -> list:
         get_products(deal_id)
     )
     handled_products = handle_products(deal, products)
-    return await update_products(handled_products)
+    updated_products = await update_products(handled_products)
+    asyncio.create_task(log_updates(updated_products))
+    return updated_products
 
 
 async def get_deal(deal_id: int) -> dict:
@@ -75,7 +70,6 @@ async def get_products(deal_id: int) -> list:
 
 def handle_products(deal: dict, products: list) -> Generator[dict]:
     """Ищет нужные продукты и обновляет их"""
-    # TODO переписать под ID
     rent_start = date_var = datetime.fromisoformat(deal[DealUserFields.rent_date_start])
     rent_flag = True
     for product in products:
@@ -85,7 +79,7 @@ def handle_products(deal: dict, products: list) -> Generator[dict]:
             yield product
         if product['PRODUCT_ID'] == 1437:           # .startswith("Сумма аренды"): Он же остаток
             yield update_from_month_range(product, deal=deal, rent_start=rent_start)
-        if product['PRODUCT_ID'] == 1439:           # product['PRODUCT_NAME'].startswith("Доставка"):
+        if product['PRODUCT_ID'] == 1439:           # .startswith("Доставка"):
             yield update_from_delivery_address(product, deal=deal)
 
 
@@ -141,3 +135,10 @@ async def update_products(updated_products: Generator[dict]) -> list:
     batch_sample = "crm.item.productrow.update?id={0}&fields[productName]={1}"
     requests = {i: batch_sample.format(p['ID'], p['PRODUCT_NAME']) for i, p in enumerate(updated_products)}
     return await BX.call_batch(params={'halt': 0, 'cmd': requests})
+
+
+async def log_updates(products: list):
+    """Логгирует обновления в продуктах"""
+    for row in products:
+        row = row['productRow']
+        logger.info(f"Product id: {row['productId']} from deal {row['ownerId']} renamed to -> {row['productName']}")

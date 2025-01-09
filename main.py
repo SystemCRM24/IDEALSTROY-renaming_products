@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from bitrix import rename_products
-import logging
+from bitrix import rename_products, delete_cabin
 
 
 app = FastAPI(
@@ -9,24 +8,21 @@ app = FastAPI(
 )
 
 
-logger = logging.getLogger("uvicorn")
-
-
 @app.get('/ping/', status_code=200, tags=['Main'])
 async def ping():
     return {'Message': 'Pong'}
 
 
 @app.post('/rename/', status_code=200, tags=['Main'])
-async def main(deal_id: int):
+async def rename(deal_id: int) -> list:
     """Переименовывает продукты в сделке"""
-    products = await rename_products(deal_id)
-    await log_updates(products)
-    return products 
+    return await rename_products(deal_id)
 
 
-async def log_updates(products: list):
-    """Логгирует обновления в продуктах"""
-    for row in products:
-        row = row['productRow']
-        logger.info(f"Product id: {row['productId']} from deal {row['ownerId']} renamed to -> {row['productName']}")
+@app.post('/delete/', status_code=200, tags=['Main'])
+async def delete(sp_id: int) -> list:
+    """
+    Удаляет продукт Бытовка из продуктов в сделке, если есть продукт прокат.
+    sp_id - ид смарт процесса.
+    """
+    return await delete_cabin(sp_id)
