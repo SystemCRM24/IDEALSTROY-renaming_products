@@ -2,7 +2,7 @@ from .constants import BX, logger
 import asyncio
 
 
-async def delete_cabin(id: int) -> list:
+async def delete_cabin(id: str) -> list:
     """Основной метод удаления продукта Бытовка из счета"""
     products = await get_products_from_invoice(id)
     cabin = await pop_cabin(products)
@@ -11,7 +11,7 @@ async def delete_cabin(id: int) -> list:
     return products
 
 
-async def get_products_from_invoice(id: int) -> list:
+async def get_products_from_invoice(id: str) -> list:
     """Получает список товарных позиций из счета."""
     response: dict = await BX.call(
         'crm.item.productrow.list',

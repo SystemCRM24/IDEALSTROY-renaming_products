@@ -20,9 +20,9 @@ async def rename(deal_id: int) -> list:
 
 
 @app.post('/delete/', status_code=200, tags=['Main'])
-async def delete(sp_id: int) -> list:
+async def delete(sp_id: str) -> list:
     """
     Удаляет продукт Бытовка из продуктов в сделке, если есть продукт прокат.
-    sp_id - ид смарт процесса.
+    sp_id - ид смарт процесса. Он приходит в формате SI_2827, поэтому, парсим его как строку.
     """
-    return await delete_cabin(sp_id)
+    return await delete_cabin(sp_id[3:])
