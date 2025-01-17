@@ -45,4 +45,4 @@ async def delete_cabin_product(product: dict):
         'crm.item.productrow.delete',
         {'id': product['id']}
     )
-    logger.info(f'Cabin ({product['productName']}) was deleted from invoice #{product['ownerId']}')
+    logger.info(f'Product ({product['productName']}) was deleted from smart invoice #{product['ownerId']}')
