@@ -2,22 +2,22 @@ from .constants import BX, logger
 import asyncio
 
 
-async def delete_cabin(id: str) -> list:
+async def delete_cabin(sp_id: str, to_delete: str) -> list:
     """Основной метод удаления продукта Бытовка из счета"""
-    products = await get_products_from_invoice(id)
-    cabin = await pop_cabin(products)
-    if cabin is not None:
-        asyncio.create_task(delete_cabin_product(cabin))
+    products = await get_products_from_invoice(sp_id)
+    product = await pop_cabin(products, to_delete)
+    if product is not None:
+        asyncio.create_task(delete_cabin_product(product))
     return products
 
 
-async def get_products_from_invoice(id: str) -> list:
+async def get_products_from_invoice(sp_id: str) -> list:
     """Получает список товарных позиций из счета."""
     response: dict = await BX.call(
         'crm.item.productrow.list',
         {'filter': {
             '=ownerType': 'SI',     # Идентификатор типа Счет(новый) https://apidocs.bitrix24.ru/api-reference/crm/data-types.html#object_type
-            '=ownerId': id
+            '=ownerId': sp_id
         }},
         raw=True
     )
@@ -27,26 +27,22 @@ async def get_products_from_invoice(id: str) -> list:
         return []
 
 
-async def pop_cabin(products: list) -> dict:
+async def pop_cabin(products: list, to_delete: str) -> dict:
     """Находим словарь бытовки. Исключаем бытовку из списка продуктов"""
-    cabin = None
-    cabin_index = None
-    is_rent = False
-    for index, product in enumerate(products):
-        if product['productName'].startswith('Прокат'):
-            is_rent = True
-        if product['productName'].startswith('БК'):
-            cabin = product
-            cabin_index = index
-    if cabin_index is not None:
-        del products[cabin_index]
-    return cabin if is_rent else None
+    product_index = product = None
+    for index, position in enumerate(products):
+        if position['productName'] == to_delete:
+            product_index = index
+            product = position
+    if product_index is not None:
+        del products[product_index]
+        return product
 
 
-async def delete_cabin_product(cabin: dict):
+async def delete_cabin_product(product: dict):
     """Делает запрос и удаляет кабину (бытовки)"""
     await BX.call(
         'crm.item.productrow.delete',
-        {'id': cabin['id']}
+        {'id': product['id']}
     )
-    logger.info(f'Cabin ({cabin['productName']}) was deleted from invoice #{cabin['ownerId']}')
+    logger.info(f'Cabin ({product['productName']}) was deleted from invoice #{product['ownerId']}')
