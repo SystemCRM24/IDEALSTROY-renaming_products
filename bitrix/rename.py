@@ -33,7 +33,6 @@ async def get_deal_with_cabin(deal_id: int) -> dict:
     card: dict = await BX.call(
         method='crm.item.get',
         items={'entityTypeId': entity_type_id, 'id': card_id},
-        items={'entityTypeId': entity_type_id, 'id': card_id},
         raw=True
     )
     if entity_type_id == 1064:
