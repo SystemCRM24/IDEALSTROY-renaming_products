@@ -47,7 +47,7 @@ def handle_products(deal: dict, products: list[dict]) -> Generator[dict]:
 def rename_delivery_product(product: dict, deal: dict) -> dict:
     address: str = deal.get(DealUserFields.delivery_address, '')
     address = address.split('|')[0]
-    product['PRODUCT_NAME'] = f'Доставка {address}'
+    product['PRODUCT_NAME'] = f'Доставка до адреса: {address}'
     return product
 
 
