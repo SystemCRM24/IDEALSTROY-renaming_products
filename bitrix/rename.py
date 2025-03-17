@@ -30,22 +30,12 @@ async def get_deal_with_cabin(deal_id: int) -> dict:
     else:
         card_id = deal[DealUserFields.tool][0]
         entity_type_id = 1056
-    if deal[DealUserFields.cabin]:
-        card_id = deal[DealUserFields.cabin][0]
-        entity_type_id = 1064
-    else:
-        card_id = deal[DealUserFields.tool][0]
-        entity_type_id = 1056
     card: dict = await BX.call(
         method='crm.item.get',
         items={'entityTypeId': entity_type_id, 'id': card_id},
         items={'entityTypeId': entity_type_id, 'id': card_id},
         raw=True
     )
-    if entity_type_id == 1064:
-        deal[DealUserFields.cabin] = card['result']['item']['title']
-    if entity_type_id == 1056:
-        deal[DealUserFields.tool] = card['result']['item']['title']
     if entity_type_id == 1064:
         deal[DealUserFields.cabin] = card['result']['item']['title']
     if entity_type_id == 1056:
@@ -69,21 +59,14 @@ def handle_products(deal: dict, products: list) -> Generator[dict]:
         rent_start = date_var = datetime.fromisoformat(deal[DealUserFields.cabin_rent_date_start])
     else:
         rent_start = date_var = datetime.fromisoformat(deal[DealUserFields.tool_rent_date_start])
-    if deal[DealUserFields.cabin_rent_date_start]:
-        rent_start = date_var = datetime.fromisoformat(deal[DealUserFields.cabin_rent_date_start])
-    else:
-        rent_start = date_var = datetime.fromisoformat(deal[DealUserFields.tool_rent_date_start])
     rent_flag = True
     for product in products:
-        if product['PRODUCT_NAME'].startswith("Прокат") and not "инструмента" in product['PRODUCT_NAME'] and rent_flag:
         if product['PRODUCT_NAME'].startswith("Прокат") and not "инструмента" in product['PRODUCT_NAME'] and rent_flag:
             product, date_var = update_from_month_name(product, deal=deal, date_var=date_var)
             rent_flag = False
             yield product
         if product['PRODUCT_ID'] == 3569 or product['PRODUCT_ID'] == 4231:           # .startswith("Сумма аренды"): Он же остаток
-        if product['PRODUCT_ID'] == 3569 or product['PRODUCT_ID'] == 4231:           # .startswith("Сумма аренды"): Он же остаток
             yield update_from_month_range(product, deal=deal, rent_start=rent_start)
-        if product['PRODUCT_ID'] == 3561:           # .startswith("Доставка"):
         if product['PRODUCT_ID'] == 3561:           # .startswith("Доставка"):
             yield update_from_delivery_address(product, deal=deal)
 
@@ -95,13 +78,10 @@ def update_from_month_name(product: dict, **context) -> dict:
     current_month_num = date_var.month
     current_day = date_var.day
     last_month_day = last_day_of_month(date_var)
-    current_day = date_var.day
-    last_month_day = last_day_of_month(date_var)
     while current_month_num == date_var.month:
         date_var += timedelta(days=1)
     product['PRODUCT_NAME'] = (
         f"Прокат {deal[DealUserFields.cabin]} за "
-        f"{MONTHS[date_var.month - 1 + int(last_month_day-current_day < 25)]} {date_var.year} г."
         f"{MONTHS[date_var.month - 1 + int(last_month_day-current_day < 25)]} {date_var.year} г."
     )
     return product, date_var
@@ -124,7 +104,6 @@ def update_from_month_range(product: dict, **context) -> dict:
     else:
         product_name = deal[DealUserFields.tool]
     product['PRODUCT_NAME'] = (
-        f"Прокат {product_name} " 
         f"Прокат {product_name} " 
         f"с {rent_start.strftime(r"%d.%m.%Y")} г. "
         f"по {month_range[-1]}{rent_start.strftime(r".%m.%Y")} г."
