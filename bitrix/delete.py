@@ -1,5 +1,7 @@
-from .constants import BX, logger
 import asyncio
+
+from .bitrix import BX
+from .logger import logger
 
 
 async def delete_cabin(sp_id: str, to_delete: str) -> list:

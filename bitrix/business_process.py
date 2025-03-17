@@ -1,4 +1,5 @@
-from .constants import BX, logger
+from .bitrix import BX
+from .logger import logger
 
 
 async def call_process(process_id: str, deal_id: str):

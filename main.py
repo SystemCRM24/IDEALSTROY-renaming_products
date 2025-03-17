@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from bitrix import rename_products, delete_cabin, call_process
+from bitrix import rename_products, delete_cabin, call_process, rename_instrument
 import asyncio
 
 
@@ -9,7 +9,7 @@ app = FastAPI(
 )
 
 
-@app.get('/ping/', status_code=200, tags=['Main'])
+@app.get('/ping', status_code=200, tags=['Main'])
 async def ping():
     return {'Message': 'Pong'}
 
@@ -35,3 +35,12 @@ async def delete(sp_id: str, product: str) -> list:
     if sp_id.startswith('SI_'):
         sp_id = sp_id[3:]
     return await delete_cabin(sp_id, product)
+
+
+@app.post('/rename_instrument/', status_code=200, tags=['Main'])
+async def rename_instr(deal_id: int) -> list:
+    """
+    Переименовывает продукты в сделке с воронки Прокат инструментов.
+    """
+    result = await rename_instrument(deal_id)
+    return result
